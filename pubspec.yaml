@@ -1,14 +1,12 @@
-name: ElHelalTex
+name: HDTex
 description: A new Flutter project.
 
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 1.0.0
 
 environment:
-  sdk: ">=2.16.2 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
   flutter:
@@ -16,7 +14,6 @@ dependencies:
   flutter_localizations: # Add this line
     sdk: flutter
   path_provider:
-  open_file:
   cupertino_icons:
   syncfusion_flutter_datagrid:
   http:
@@ -26,7 +23,10 @@ dependencies:
   shared_preferences:
   searchable_dropdown:
   dropdown_search:
-
+  flutter_launcher_icons:
+  store_redirect:
+  package_info_plus:
+  flutter_native_splash:
 
 dev_dependencies:
   flutter_test:

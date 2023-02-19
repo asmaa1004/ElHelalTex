@@ -1,6 +1,3 @@
-// ignore_for_file: non_constant_identifier_names
-
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
@@ -8,6 +5,9 @@ import '../api_link.dart';
 import '../components/colors.dart';
 import '../dll.dart';
 import '../main.dart';
+import '../models/customers.dart' show Data, Customers;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ColorCoding extends StatefulWidget {
   const ColorCoding({Key? key}) : super(key: key);
@@ -17,59 +17,23 @@ class ColorCoding extends StatefulWidget {
 }
 
 class _ColorCodingState extends State<ColorCoding> with DLL {
-  ListItem? _NewValue_CustomersData;
-  List<DropdownMenuItem<ListItem>> NewDropdownMenuItem_CustomersData = [];
+  Customers? customers;
 
-  List<dynamic> customersData = [];
+  String date = sharedPref.getString("S_LastUpdate").toString();
+
+  String currentCustomer = "0";
 
   bool isLoading = false;
 
   bool isOwner = false;
 
-  String currentCustomer = "ALL";
+  void _getCustomers() async {
 
-  String date = sharedPref.getString("S_LastUpdate").toString();
+    var response = await http.post(Uri.parse("$linkServerName/Customers.php"));
 
-  loadCustomers() async {
-    try {
-      isLoading = true;
-      setState(() {});
-      var response = await postRequest(
-          apiCustomers, {"CusCode": sharedPref.getString("S_CusCode")});
-
-      if (response['status'] == "success") {
-        customersData = response["data"];
-
-        for (var element in customersData) {
-          NewDropdownMenuItem_CustomersData.add(
-            DropdownMenuItem(
-              child: Text(element["CusName"]),
-              value: ListItem(
-                element["CusCode"],
-                element["CusName"],
-              ),
-            ),
-          );
-        }
-
-        isLoading = false;
-        setState(() {});
-      } else {
-        AwesomeDialog(
-            context: context,
-            showCloseIcon: true,
-            title: "Alert",
-            body: const Text("Can't Load Data"))
-            .show();
-      }
-    } catch (e) {
-      AwesomeDialog(
-          context: context,
-          showCloseIcon: true,
-          title: "Alert",
-          body: Text(e.toString()))
-          .show();
-    }
+    setState(() {
+      customers = Customers.fromJson(json.decode(response.body));
+    });
   }
 
   @override
@@ -78,13 +42,11 @@ class _ColorCodingState extends State<ColorCoding> with DLL {
     if (sharedPref.getString("S_UserType") == '0') {
       currentCustomer = sharedPref.getString("S_CusCode")!;
     } else {
-      loadCustomers();
+      _getCustomers();
       isOwner = true;
-      currentCustomer = "";
+      currentCustomer = "0";
     }
   }
-
-  final items = [];
 
   @override
   Widget build(BuildContext context) {
@@ -121,39 +83,53 @@ class _ColorCodingState extends State<ColorCoding> with DLL {
               Visibility(
                 visible: isOwner,
                 child: Container(
-                  margin: const EdgeInsets.all(5),
-                  padding: const EdgeInsets.only(left: 10, right: 10),
+                  margin: const EdgeInsets.all(10),
+                  height: 60,
                   decoration: BoxDecoration(
                     color: kMainColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(5),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<ListItem>(
-                        isExpanded: true,
-                        hint: const Text(
-                          "اختر العميل",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 19,
+                  child: Autocomplete<Data>(
+                    optionsMaxHeight: 300,
+                    onSelected: (data){
+                      currentCustomer = data.cusCode;
+                      FocusScope.of(context).requestFocus(FocusNode());
+                    } ,
+                    optionsBuilder: (TextEditingValue value) {
+                      return customers!.data
+                          .where((element) => element.cusName
+                          .toLowerCase()
+                          .contains(value.text.toLowerCase()))
+                          .toList();
+                    },
+                    displayStringForOption: (Data d)=>d.cusName,
+                    fieldViewBuilder: (context, controller, focsNode, onEditingComplete){
+                      return TextField(
+                        textDirection: TextDirection.rtl,
+                        controller: controller,
+                        focusNode: focsNode,
+                        onEditingComplete: onEditingComplete,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: kMainColor)
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: kMainColor)
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: kMainColor)
+                          ),
+                          hintText: "أختر العميل",
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: kMainColor,
                           ),
                         ),
-                        value: _NewValue_CustomersData,
-                        items: NewDropdownMenuItem_CustomersData,
-                        onChanged: (value) async {
-                          setState(() {
-                            _NewValue_CustomersData = value;
-                            if (value != null) {
-                              if (value.CusCode != null) {
-                                if (value.CusCode != "0") {
-                                  currentCustomer = value.CusCode!;
-                                } else {
-                                  currentCustomer = "ALL";
-                                }
-                                loadCustomers();
-                              }
-                            }
-                          });
-                        }),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -171,7 +147,7 @@ class _ColorCodingState extends State<ColorCoding> with DLL {
                 ),
               ),
               SizedBox(
-                height: MediaQuery.of(context).size.height * 0.78,
+                height: MediaQuery.of(context).size.height * 0.72,
                 child: FutureBuilder(
                   future: getProductDataSource(),
                   builder: (BuildContext context,
@@ -325,7 +301,7 @@ class _ColorCodingState extends State<ColorCoding> with DLL {
   Future<List<Product>> generateProductList() async {
     List<Product> productList = [];
     var response =
-    await postRequest(apiColorCoding, {"CusCode": currentCustomer});
+    await postRequest("$linkServerName/ColorCoding/ColorCoding.php", {"CusCode": currentCustomer});
 
     for (var item in response["data"]) {
       Product current = Product(
@@ -438,10 +414,4 @@ class Product {
   final String colorCode;
   final String colorNo;
   final String cloth;
-}
-
-class ListItem {
-  String? CusCode;
-  String? CusName;
-  ListItem(this.CusCode, this.CusName);
 }

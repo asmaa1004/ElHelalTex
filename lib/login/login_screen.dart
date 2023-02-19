@@ -1,9 +1,10 @@
-
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:store_redirect/store_redirect.dart';
 import '../api_link.dart';
 import '../dll.dart';
+import '../functions.dart';
 import '../main.dart';
 import '../components/colors.dart';
 
@@ -34,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> with DLL{
         setState(() {});
         var response = await postRequest(
 
-            apiLogin, {
+            "$linkServerName/Login/Login.php", {
               "CusCode": code.text,
               "CusPass": password.text,
         });
@@ -80,14 +81,47 @@ class _LoginScreenState extends State<LoginScreen> with DLL{
         btnCancelColor: Colors.red,
       ).show();
     }
+
   }
 
   @override
   void initState() {
     super.initState();
+    APIManger.GetAppInfo().then((value) =>
+        checkApp()
+    );
+    if(sharedPref.getString("S_CusCode") != null) {
+      var textCode = sharedPref.getString("S_CusCode");
+      code.text = textCode ?? "";
+    }
   }
 
+  void checkApp(){
+    if(APIManger.appinfoIsMandory == "1"){
+      if(APIManger.appVersion != APIManger.appCurrentVerison ){
+        AwesomeDialog(
+            context: context,
+            dialogType: DialogType.WARNING,
+            animType: AnimType.RIGHSLIDE,
+            headerAnimationLoop: true,
+            title: 'تحذير',
+            desc:
+            "تم إصدار تحديث جديد بالرجاء تنزيله",
+            btnOkOnPress: () {
+              StoreRedirect.redirect(androidAppId: "com.MousaSoft.dyehouse",
+                  iOSAppId: "585027354");
+            },
+            btnOkText: 'موافق',
+            btnOkColor: kMainColor,
+            dismissOnTouchOutside:false
+        ).show();
 
+      }
+    }
+    else{
+
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> with DLL{
         ),
         title: const Text
           (
-          "الهلال",
+          "الهلال تكس",
           style: TextStyle(
             fontSize: 16.0,
           ),
@@ -119,11 +153,11 @@ class _LoginScreenState extends State<LoginScreen> with DLL{
             [
               Image.asset(
                   'assets/images/Logo.png',
-                width: 240,
-                height: 100,
+                width: 70,
+                height: 70,
               ),
               Container(
-                padding: const EdgeInsets.all(50),
+                padding: const EdgeInsets.only(right: 50,left: 50,top: 10,bottom: 20),
                 child: Form(
                   key: formState,
                   child: Column(

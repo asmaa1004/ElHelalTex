@@ -1,6 +1,3 @@
-// ignore_for_file: non_constant_identifier_names
-
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
@@ -8,6 +5,9 @@ import '../api_link.dart';
 import '../components/colors.dart';
 import '../dll.dart';
 import '../main.dart';
+import '../models/customers.dart' show Data, Customers;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class FinstockDetail extends StatefulWidget {
   const FinstockDetail({Key? key}) : super(key: key);
@@ -18,64 +18,23 @@ class FinstockDetail extends StatefulWidget {
 }
 
 class _FinstockDetailState extends State<FinstockDetail> with DLL {
+  Customers? customers;
 
-  ListItem? _newValue_CustomersData;
-  List<DropdownMenuItem<ListItem>> newDropdownMenuItem_CustomersData = [];
+  String date = sharedPref.getString("S_LastUpdate").toString();
 
-  List<dynamic> customersData = [];
+  String currentCustomer = "0";
 
   bool isLoading = false;
 
   bool isOwner = false;
 
-  String currentCustomer = "ALL";
+  void _getCustomers() async {
 
-  String date = sharedPref.getString("S_LastUpdate")!;
+    var response = await http.post(Uri.parse("$linkServerName/Customers.php"));
 
-  //String formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(now);
-
-
-
-  LoadCustomers() async {
-    try {
-      isLoading = true;
-      setState(() {});
-      var response = await postRequest(
-          apiCustomers, {"CusCode": sharedPref.getString("S_CusCode")});
-
-      if (response['status'] == "success") {
-        customersData = response["data"];
-
-        for (var element in customersData) {
-          newDropdownMenuItem_CustomersData.add(
-            DropdownMenuItem(
-              child: Text(element["CusName"]),
-              value: ListItem(
-                element["CusCode"],
-                element["CusName"],
-              ),
-            ),
-          );
-        }
-
-        isLoading = false;
-        setState(() {});
-      } else {
-        AwesomeDialog(
-                context: context,
-                showCloseIcon: true,
-                title: "Alert",
-                body: const Text("Can't Load Data"))
-            .show();
-      }
-    } catch (e) {
-      AwesomeDialog(
-              context: context,
-              showCloseIcon: true,
-              title: "Alert",
-              body: Text(e.toString()))
-          .show();
-    }
+    setState(() {
+      customers = Customers.fromJson(json.decode(response.body));
+    });
   }
 
   @override
@@ -84,15 +43,11 @@ class _FinstockDetailState extends State<FinstockDetail> with DLL {
     if (sharedPref.getString("S_UserType") == '0') {
       currentCustomer = sharedPref.getString("S_CusCode")!;
     } else {
-      LoadCustomers();
+      _getCustomers();
       isOwner = true;
-      currentCustomer = "";
+      currentCustomer = "0";
     }
   }
-
-  final items = [];
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -129,39 +84,53 @@ class _FinstockDetailState extends State<FinstockDetail> with DLL {
                     Visibility(
                       visible: isOwner,
                       child: Container(
-                        margin: const EdgeInsets.all(5),
-                        padding: const EdgeInsets.only(left: 10, right: 10),
+                        margin: const EdgeInsets.all(10),
+                        height: 60,
                         decoration: BoxDecoration(
                           color: kMainColor.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(5),
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<ListItem>(
-                              isExpanded: true,
-                              hint: const Text(
-                                "اختر العميل",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 19,
+                        child: Autocomplete<Data>(
+                          optionsMaxHeight: 300,
+                          onSelected: (data){
+                            currentCustomer = data.cusCode;
+                            FocusScope.of(context).requestFocus(FocusNode());
+                          } ,
+                          optionsBuilder: (TextEditingValue value) {
+                            return customers!.data
+                                .where((element) => element.cusName
+                                .toLowerCase()
+                                .contains(value.text.toLowerCase()))
+                                .toList();
+                          },
+                          displayStringForOption: (Data d)=>d.cusName,
+                          fieldViewBuilder: (context, controller, focsNode, onEditingComplete){
+                            return TextField(
+                              textDirection: TextDirection.rtl,
+                              controller: controller,
+                              focusNode: focsNode,
+                              onEditingComplete: onEditingComplete,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: kMainColor)
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: kMainColor)
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: kMainColor)
+                                ),
+                                hintText: "أختر العميل",
+                                prefixIcon: const Icon(
+                                  Icons.search,
+                                  color: kMainColor,
                                 ),
                               ),
-                              value: _newValue_CustomersData,
-                              items: newDropdownMenuItem_CustomersData,
-                              onChanged: (value) async {
-                                setState(() {
-                                  _newValue_CustomersData = value;
-                                  if (value != null) {
-                                    if (value.CusCode != null) {
-                                      if (value.CusCode != "0") {
-                                        currentCustomer = value.CusCode!;
-                                      } else {
-                                        currentCustomer = "ALL";
-                                      }
-                                      LoadCustomers();
-                                    }
-                                  }
-                                });
-                              }),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -179,7 +148,7 @@ class _FinstockDetailState extends State<FinstockDetail> with DLL {
                       ),
                     ),
                     SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.78,
+                      height: MediaQuery.of(context).size.height * 0.72,
                       child: FutureBuilder(
                         future: getProductDataSource(),
                         builder: (BuildContext context,
@@ -402,7 +371,7 @@ class _FinstockDetailState extends State<FinstockDetail> with DLL {
   Future<List<Product>> generateProductList() async {
     List<Product> productList = [];
     var response =
-        await postRequest(apiFinstockDetail, {"CusCode": currentCustomer});
+        await postRequest("$linkServerName/FinishStore/FinishDetail.php", {"CusCode": currentCustomer});
 
     for (var item in response["data"]) {
       Product current = Product(
@@ -589,8 +558,3 @@ class Product {
   final String finRawWt;
 }
 
-class ListItem {
-  String? CusCode;
-  String? CusName;
-  ListItem(this.CusCode, this.CusName);
-}

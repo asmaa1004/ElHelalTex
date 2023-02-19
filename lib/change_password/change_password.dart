@@ -34,7 +34,7 @@ class _ChangePasswordState extends State<ChangePassword> with DLL {
         setState(() {});
         var response = await postRequest(
 
-            apiUpdatePass, {
+            "$linkServerName/Login/UpdatePass.php", {
           "CusCode": sharedPref.getString("S_CusCode"),
           "CusPass": oldPassword.text,
           "NewCusPass": newPassword.text,});
@@ -105,10 +105,17 @@ class _ChangePasswordState extends State<ChangePassword> with DLL {
             child: Image.asset(
               'assets/images/Logo.png',
               width: 50,
+              height: 50,
             ),
           ),
         ],
-
+        title: const Text
+          (
+          "تغيير كلمه السر",
+          style: TextStyle(
+            fontSize: 16.0,
+          ),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(

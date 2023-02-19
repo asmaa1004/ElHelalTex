@@ -1,4 +1,4 @@
-package com.example.elhelaltex
+package com.example.elhelal
 
 import io.flutter.embedding.android.FlutterActivity
 

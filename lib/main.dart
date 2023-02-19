@@ -1,3 +1,4 @@
+// @dart=2.9
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,7 +6,8 @@ import 'change_password/change_password.dart';
 import 'login/login_screen.dart';
 import 'switch_screen/switch_screen.dart';
 
-late SharedPreferences sharedPref;
+
+ SharedPreferences sharedPref;
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,10 +16,11 @@ void main() async{
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -32,7 +35,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: "login_screen",
       routes: {
-        "login_screen" : (context) =>  const LoginScreen(),
+        "login_screen" : (context) =>  const LoginScreen() ,
         "switch_screen" : (context) =>  const SwitchScreen(),
         "change_password" : (context) =>  const ChangePassword(),
       },

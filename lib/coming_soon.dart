@@ -17,7 +17,7 @@ class CommingSoon extends StatelessWidget {
             padding: const EdgeInsets.all(5),
             child: Image.asset(
               'assets/images/Logo.png',
-              width: 125,
+              width: 50,
             ),
           ),
         ],
